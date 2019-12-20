@@ -19,7 +19,7 @@ namespace AwsForensicRefresh.AWS
             AwsCredentials = awsCredentials;
         }
 
-        public async Task DescribeInstances()
+        public async Task<List<EC2Instance>> DescribeInstances()
         {
             List<EC2Instance> ec2Instances = new List<EC2Instance>();
 
@@ -43,6 +43,7 @@ namespace AwsForensicRefresh.AWS
                 if (response.NextToken == null)
                     done = true;
             }
+            return ec2Instances;
         }
     }
 }
