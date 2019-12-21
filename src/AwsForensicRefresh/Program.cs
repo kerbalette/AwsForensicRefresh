@@ -20,7 +20,7 @@ namespace AwsForensicRefresh
         private static AWSCredentials _awsCredentials;
         
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var arguments = new FluentCommandLineParser<ApplicationArguments>();
             arguments.Setup(arg => arg.AccessKey)
@@ -66,7 +66,7 @@ namespace AwsForensicRefresh
                 AppConfiguration(applicationArguments);
                 _awsCredentials = new Amazon.Runtime.BasicAWSCredentials(arguments.Object.AccessKey, arguments.Object.SecretKey);
                 AWS.EC2 ec2 = new EC2(_awsCredentials);
-                var results = ec2.DescribeInstances();
+                var results = await ec2.DescribeInstances();
 
                 bool tearDown = UtilsConsole.Confirm("Would you like to terminate an existing Instance?");
             }
