@@ -36,7 +36,9 @@ namespace AwsForensicRefresh.AWS
                 {
                     foreach (Instance instance in reservation.Instances)
                     {
-                        ec2Instances.Add(new EC2Instance(instance.InstanceId, instance.KeyName, instance.PublicIpAddress, instance.State.Name));
+                        ec2Instances.Add(new EC2Instance(instance.InstanceId, instance.KeyName, 
+                            instance.PublicIpAddress, instance.PublicDnsName, instance.State.Name, 
+                            instance.InstanceType,"",""));
                     }
                 }
 
