@@ -36,16 +36,27 @@ namespace AwsForensicRefresh.AWS
                 {
                     foreach (Instance instance in reservation.Instances)
                     {
+                        string ownerTag = "";
+                        string usageDescription = "";
+                        foreach (var tag in instance.Tags)
+                        {
+                            if (tag.Key == "owner")
+                                ownerTag = tag.Value;
+
+                            if (tag.Key == "usage-description")
+                                usageDescription = tag.Value;
+                        }
                         ec2Instances.Add(new EC2Instance(instance.InstanceId, instance.KeyName, 
                             instance.PublicIpAddress, instance.PublicDnsName, instance.State.Name, 
-                            instance.InstanceType,"",""));
+                            instance.InstanceType,ownerTag,usageDescription));
                     }
                 }
 
                 if (response.NextToken == null)
                     done = true;
             }
-            return ec2Instances;
+
+            return ec2Instances.OrderBy(t => t.Owner).ToList();
         }
     }
 }
