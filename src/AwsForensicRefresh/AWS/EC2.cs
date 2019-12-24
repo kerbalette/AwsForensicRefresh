@@ -38,6 +38,7 @@ namespace AwsForensicRefresh.AWS
                     {
                         string ownerTag = "";
                         string usageDescription = "";
+                        string instanceName = "";
                         foreach (var tag in instance.Tags)
                         {
                             if (tag.Key == "owner")
@@ -45,8 +46,11 @@ namespace AwsForensicRefresh.AWS
 
                             if (tag.Key == "usage-description")
                                 usageDescription = tag.Value;
+                            
+                            if (tag.Key == "Name")
+                                instanceName = tag.Value;
                         }
-                        ec2Instances.Add(new EC2Instance(instance.InstanceId, instance.KeyName, 
+                        ec2Instances.Add(new EC2Instance(instance.InstanceId, instanceName, 
                             instance.PublicIpAddress, instance.PublicDnsName, instance.State.Name, 
                             instance.InstanceType,ownerTag,usageDescription));
                     }

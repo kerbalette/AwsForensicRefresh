@@ -64,11 +64,26 @@ namespace AwsForensicRefresh
             {
                 var applicationArguments = arguments.Object;
                 AppConfiguration(applicationArguments);
-                _awsCredentials = new Amazon.Runtime.BasicAWSCredentials(arguments.Object.AccessKey, arguments.Object.SecretKey);
+                _awsCredentials = new BasicAWSCredentials(arguments.Object.AccessKey, arguments.Object.SecretKey);
                 AWS.EC2 ec2 = new EC2(_awsCredentials);
                 var results = await ec2.DescribeInstances();
+                int instanceNumber = 0;
+                string terminateInstanceNumber = "";
+                foreach (var result in results)
+                {
+                    if (applicationArguments.TerminateInstanceID == result.InstanceId)
+                        terminateInstanceNumber =
+                            $"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})";
+                    
+                    Console.WriteLine($"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})");
+                    instanceNumber++;
+                }
 
                 bool tearDown = UtilsConsole.Confirm("Would you like to terminate an existing Instance?");
+                if (tearDown)
+                {
+                    Console.WriteLine("Kill? " + terminateInstanceNumber);
+                }
             }
             
         }
