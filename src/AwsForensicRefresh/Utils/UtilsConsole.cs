@@ -21,5 +21,22 @@ namespace AwsForensicRefresh.Utils
 
             return (response == ConsoleKey.Y);
         }
+
+        public static string ChooseOption(string message, List<string> allowedKeys)
+        {
+            string consoleKey;
+            while(true)
+            {
+                consoleKey = Console.ReadKey(false).Key.ToString().ToLower();
+
+                if (consoleKey.Length == 2 && consoleKey.StartsWith("d"))
+                    consoleKey = consoleKey.Substring(1);
+                
+                if (allowedKeys.Contains(consoleKey.ToString()))
+                    break;
+            }
+            return consoleKey;
+        }
+
     }
 }

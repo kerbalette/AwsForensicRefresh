@@ -52,8 +52,6 @@ namespace AwsForensicRefresh
 
             var argumentResult = arguments.Parse(args);
 
-
-
             if (argumentResult.HasErrors || argumentResult.EmptyArgs)
             {
                 Console.WriteLine("Usage:");
@@ -66,25 +64,33 @@ namespace AwsForensicRefresh
                 AppConfiguration(applicationArguments);
                 _awsCredentials = new BasicAWSCredentials(arguments.Object.AccessKey, arguments.Object.SecretKey);
                 AWS.EC2 ec2 = new EC2(_awsCredentials);
-                var results = await ec2.DescribeInstances();
-                int instanceNumber = 0;
-                string terminateInstanceNumber = "";
-                foreach (var result in results)
-                {
-                    if (applicationArguments.TerminateInstanceID == result.InstanceId)
-                        terminateInstanceNumber =
-                            $"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})";
-                    
-                    Console.WriteLine($"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})");
-                    instanceNumber++;
-                }
 
-                bool tearDown = UtilsConsole.Confirm("Would you like to terminate an existing Instance?");
+                bool tearDown = UtilsConsole.Confirm("\nWould you like to terminate an existing Instance?");
                 if (tearDown)
                 {
-                    Console.WriteLine("Kill? " + terminateInstanceNumber);
+                    var results = await ec2.DescribeInstances();
+                    int instanceNumber = 0;
+                    List<string> instanceTerminateList = new List<string>();
+                    string defaultTerminateInstanceNumber = "";
+                    foreach (var result in results)
+                    {
+                        if (applicationArguments.TerminateInstanceID == result.InstanceId)
+                            defaultTerminateInstanceNumber =
+                                $"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})";
+
+                        Console.WriteLine($"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})");
+                        
+                        instanceTerminateList.Add(instanceNumber.ToString());
+                        instanceNumber++;
+                    }
+                    
+                    string terminate = Utils.UtilsConsole.ChooseOption("Which instance would you like to terminate? ", instanceTerminateList);
+                    Console.WriteLine("Stopping " + terminate);
                 }
+
+                
             }
+            Console.ReadLine();
             
         }
 
