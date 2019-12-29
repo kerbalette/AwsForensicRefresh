@@ -65,20 +65,20 @@ namespace AwsForensicRefresh
                 _awsCredentials = new BasicAWSCredentials(arguments.Object.AccessKey, arguments.Object.SecretKey);
                 AWS.EC2 ec2 = new EC2(_awsCredentials);
 
-                bool tearDown = UtilsConsole.Confirm("\nWould you like to terminate an existing Instance?");
+                bool tearDown = UtilsConsole.Confirm("Would you like to terminate an existing Instance?");
                 if (tearDown)
                 {
                     var results = await ec2.DescribeInstances();
                     int instanceNumber = 0;
                     List<string> instanceTerminateList = new List<string>();
-                    string defaultTerminateInstanceNumber = "";
+                    string lastTerminateInstanceNumber = "";
                     foreach (var result in results)
                     {
                         if (applicationArguments.TerminateInstanceID == result.InstanceId)
-                            defaultTerminateInstanceNumber =
+                            lastTerminateInstanceNumber =
                                 $"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})";
 
-                        Console.WriteLine($"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})");
+                        Console.WriteLine($"{lastTerminateInstanceNumber}");
                         
                         instanceTerminateList.Add(instanceNumber.ToString());
                         instanceNumber++;

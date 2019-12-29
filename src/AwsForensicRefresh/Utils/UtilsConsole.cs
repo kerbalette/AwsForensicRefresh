@@ -24,6 +24,7 @@ namespace AwsForensicRefresh.Utils
 
         public static string ChooseOption(string message, List<string> allowedKeys)
         {
+            Console.WriteLine(message);
             string consoleKey;
             while(true)
             {
