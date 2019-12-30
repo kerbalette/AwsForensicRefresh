@@ -64,28 +64,41 @@ namespace AwsForensicRefresh
                 AppConfiguration(applicationArguments);
                 _awsCredentials = new BasicAWSCredentials(arguments.Object.AccessKey, arguments.Object.SecretKey);
                 AWS.EC2 ec2 = new EC2(_awsCredentials);
-
-                bool tearDown = UtilsConsole.Confirm("Would you like to terminate an existing Instance?");
-                if (tearDown)
+                
+                if (UtilsConsole.Confirm("Would you like to terminate an existing Instance?"))
                 {
                     var results = await ec2.DescribeInstances();
                     int instanceNumber = 0;
-                    List<string> instanceTerminateList = new List<string>();
-                    string lastTerminateInstanceNumber = "";
+                    List<string> allowedKeys = new List<string>();
+                    string InstanceList = "";
                     foreach (var result in results)
                     {
-                        if (applicationArguments.TerminateInstanceID == result.InstanceId)
-                            lastTerminateInstanceNumber =
-                                $"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})";
-
-                        Console.WriteLine($"{lastTerminateInstanceNumber}");
+                        InstanceList =
+                            $"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})";
                         
-                        instanceTerminateList.Add(instanceNumber.ToString());
+                        if (applicationArguments.TerminateInstanceID == result.InstanceId)
+                            InstanceList =
+                                $"[{instanceNumber}] * {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})";
+
+                        Console.WriteLine($"{InstanceList}");
+                        
+                        allowedKeys.Add(instanceNumber.ToString());
                         instanceNumber++;
                     }
+
+                    Console.WriteLine();
+                    string terminate = Utils.UtilsConsole.ChooseOption("Which instance would you like to terminate? ", allowedKeys);
+
+                    var ec2Terminate = results[Convert.ToInt32(terminate)];
                     
-                    string terminate = Utils.UtilsConsole.ChooseOption("Which instance would you like to terminate? ", instanceTerminateList);
-                    Console.WriteLine("Stopping " + terminate);
+                    Console.WriteLine(
+                        $"[{terminate}] * {ec2Terminate.InstanceName}-({ec2Terminate.InstanceState})-({ec2Terminate.Owner})-({ec2Terminate.InstanceId})");
+                    
+                    Console.WriteLine();
+                    if (UtilsConsole.Confirm("Would you like to terminate?"))
+                    {
+                       ec2.TerminateInstance(ec2Terminate);
+                    }
                 }
 
                 
