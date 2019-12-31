@@ -10,6 +10,7 @@ namespace AwsForensicRefresh
     {
         public string AccessKey { get; set; }
         public string SecretKey { get; set; }
+        public string AccountId { get; set; }
         public string AllowedSubnet { get; set; }
         public string AWSRegion { get; set; }
         public string TerminateInstanceID { get; set; }

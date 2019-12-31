@@ -24,12 +24,16 @@ namespace AwsForensicRefresh
         {
             var arguments = new FluentCommandLineParser<ApplicationArguments>();
             arguments.Setup(arg => arg.AccessKey)
-                .As('a', "accesskey")
+                .As('k', "accesskey")
                 .WithDescription("AWS Access Key");
 
             arguments.Setup(arg => arg.SecretKey)
                 .As('s', "secretkey")
                 .WithDescription("AWS Secret Key");
+            
+            arguments.Setup(arg => arg.AccountId)
+                .As('a', "accountId")
+                .WithDescription("AWS Account ID");
 
             arguments.Setup(arg => arg.AllowedSubnet)
                 .As('u', "allowedsubnet")
@@ -62,8 +66,8 @@ namespace AwsForensicRefresh
             {
                 var applicationArguments = arguments.Object;
                 AppConfiguration(applicationArguments);
-                _awsCredentials = new BasicAWSCredentials(arguments.Object.AccessKey, arguments.Object.SecretKey);
-                AWS.EC2 ec2 = new EC2(_awsCredentials);
+               
+                EC2 ec2 = new EC2(arguments.Object.AccessKey, arguments.Object.SecretKey, arguments.Object.AccountId, arguments.Object.AWSRegion);
                 
                 if (UtilsConsole.Confirm("Would you like to terminate an existing Instance?"))
                 {
@@ -87,7 +91,13 @@ namespace AwsForensicRefresh
                     }
 
                     Console.WriteLine();
-                    string terminate = Utils.UtilsConsole.ChooseOption("Which instance would you like to terminate? ", allowedKeys);
+                     
+                    string terminate = Utils.UtilsConsole.ChooseOption("Which instance would you like to terminate? or press [N] for None ", allowedKeys);
+
+                    if (terminate == "N")
+                    {
+                        Console.WriteLine("user pressed N");
+                    }
 
                     var ec2Terminate = results[Convert.ToInt32(terminate)];
                     

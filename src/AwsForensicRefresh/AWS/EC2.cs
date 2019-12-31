@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using Amazon;
@@ -14,12 +15,21 @@ namespace AwsForensicRefresh.AWS
 {
     public class EC2
     {
-        public EC2(AWSCredentials awsCredentials)
+        public EC2(AWSCredentials awsCredentials, string accountId, RegionEndpoint regionEndpoint) : this (awsCredentials.GetCredentials().AccessKey, awsCredentials.GetCredentials().SecretKey, accountId, regionEndpoint.SystemName)
         {
-            AwsCredentials = awsCredentials;
-            _ec2Client = new AmazonEC2Client(awsCredentials, RegionEndpoint.APSoutheast2);
         }
-        private AWSCredentials AwsCredentials { get; set; }
+
+        public EC2(string accessKey, string secretKey, string accountId, string regionEndpoint)
+        {
+            _awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
+            _accountId = accountId;
+            _regionEndpoint = RegionEndpoint.GetBySystemName(regionEndpoint);
+            _ec2Client = new AmazonEC2Client(_awsCredentials, _regionEndpoint);
+        }
+        
+        private AWSCredentials _awsCredentials { get; set; }
+        private string _accountId { get; set; }
+        private RegionEndpoint _regionEndpoint { get; set; }
         private AmazonEC2Client _ec2Client;
 
         private void DestroyInstance(EC2Instance ec2Instance)
@@ -72,6 +82,21 @@ namespace AwsForensicRefresh.AWS
             
             DestroyInstance(ec2Instance);
         }
+
+        public async Task<List<AMImage>> DescribeImages()
+        {
+            DescribeImagesRequest request = new DescribeImagesRequest();
+            request.Owners.Add(_accountId);
+            DescribeImagesResponse response = await _ec2Client.DescribeImagesAsync(request);
+            
+            List<AMImage> amiImages = new List<AMImage>();
+            foreach (var item in response.Images)
+            {
+                amiImages.Add(new AMImage(item.ImageId, item.Name, item.Description, item.CreationDate, item.Architecture, item.Platform, item.State, item.OwnerId));
+            }
+
+            return amiImages;
+        }
         
         public async Task<List<EC2Instance>> DescribeInstances()
         {
@@ -94,20 +119,23 @@ namespace AwsForensicRefresh.AWS
                         string instanceName = "";
                         foreach (var tag in instance.Tags)
                         {
-                            if (tag.Key == "owner")
-                                ownerTag = tag.Value;
-
-                            if (tag.Key == "usage-description")
-                                usageDescription = tag.Value;
-                            
-                            if (tag.Key == "Name")
-                                instanceName = tag.Value;
+                            switch (tag.Key)
+                            {
+                                case "owner":
+                                    ownerTag = tag.Value;
+                                    break;
+                                case "usage-description":
+                                    usageDescription = tag.Value;
+                                    break;
+                                case "Name":
+                                    instanceName = tag.Value;
+                                    break;
+                            }
                         }
-                 
-              
+                        
                         ec2Instances.Add(new EC2Instance(instance.InstanceId, instanceName, 
                             instance.PublicIpAddress, instance.PublicDnsName, instance.State.Name, 
-                            instance.InstanceType,ownerTag,usageDescription));
+                            instance.InstanceType,instance.ImageId, ownerTag, usageDescription));
                     }
                 }
 

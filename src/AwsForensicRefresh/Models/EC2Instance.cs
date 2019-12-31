@@ -10,15 +10,16 @@ namespace AwsForensicRefresh.AWS.Models
     public class EC2Instance
     {
         public EC2Instance(string instanceId, string instanceName, 
-            string publicIPAddress, string publicDnsName, string instanceState, 
-            string instanceType, string owner, string usageDescription)
+            string publicIpAddress, string publicDnsName, string instanceState, 
+            string instanceType, string imageId, string owner, string usageDescription)
         {
             InstanceId = instanceId;
             InstanceName = instanceName;
-            PublicIPAddress = publicIPAddress;
+            PublicIPAddress = publicIpAddress;
             PublicDnsName = publicDnsName;
             InstanceState = instanceState;
             InstanceType = instanceType;
+            ImageId = imageId;
             Owner = owner;
             UsageDescription = usageDescription;
             
@@ -30,6 +31,7 @@ namespace AwsForensicRefresh.AWS.Models
         public string PublicDnsName { get; set; }
         public string InstanceState { get; set; }
         public string InstanceType { get; set; }
+        public string ImageId { get; set; }
         public string Owner { get; set; }
         public string UsageDescription { get; set; }
     }

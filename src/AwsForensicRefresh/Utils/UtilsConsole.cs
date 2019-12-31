@@ -30,6 +30,9 @@ namespace AwsForensicRefresh.Utils
             {
                 consoleKey = Console.ReadKey(false).Key.ToString().ToLower();
 
+                if (consoleKey == "N" || consoleKey == "n")
+                    return "N";
+
                 if (consoleKey.Length == 2 && consoleKey.StartsWith("d"))
                     consoleKey = consoleKey.Substring(1);
                 
