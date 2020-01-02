@@ -10,6 +10,8 @@ using Amazon.EC2;
 using Amazon.EC2.Model;
 using Amazon.Runtime;
 using AwsForensicRefresh.AWS.Models;
+using SecurityGroup = AwsForensicRefresh.AWS.Models.SecurityGroup;
+using Vpc = AwsForensicRefresh.AWS.Models.Vpc;
 
 namespace AwsForensicRefresh.AWS
 {
@@ -75,14 +77,64 @@ namespace AwsForensicRefresh.AWS
 
         public void TerminateInstance(EC2Instance ec2Instance)
         {
-            string allocationId = GetAllocationAddress(ec2Instance.PublicIPAddress);
-            string associationId = GetAssociationAddress(ec2Instance.PublicIPAddress);
-            if (DisassociateAddress(associationId));
+            string allocationId = GetAllocationAddress(ec2Instance.PublicIpAddress);
+            string associationId = GetAssociationAddress(ec2Instance.PublicIpAddress);
+            if (DisassociateAddress(associationId))
                 ReleaseAddress(allocationId);
             
             DestroyInstance(ec2Instance);
         }
 
+        public void RunInstance(string imageId, string subnetId, string securityGroupId, string owner, string usageDescription, string platform)
+        {
+            List<BlockDeviceMapping> blockDeviceMappings = new List<BlockDeviceMapping>
+            {
+                new BlockDeviceMapping
+                {
+                    DeviceName = "/dev/sda1",
+                    Ebs = new EbsBlockDevice {VolumeSize = 30}
+                }
+            };
+
+            var response = _ec2Client.RunInstances(new RunInstancesRequest
+            {
+                BlockDeviceMappings = blockDeviceMappings,
+                ImageId = imageId,
+                InstanceType = "t2.micro",
+                KeyName = "aws-alockhart-current.pem",
+                MinCount = 1,
+                MaxCount = 1,
+                SecurityGroupIds = new List<string>{securityGroupId},
+                SubnetId = subnetId,
+                TagSpecifications = new List<TagSpecification> {
+                    new TagSpecification {
+                        ResourceType = "instance",
+                        Tags = new List<Tag> {
+                            new Tag {
+                                Key = "owner",
+                                Value = owner
+                            }
+                        }
+                    },
+                    new TagSpecification {
+                        ResourceType = "instance",
+                        Tags = new List<Tag> {
+                            new Tag {
+                                Key = "usage-description",
+                                Value = usageDescription
+                            }
+                        }
+                    }
+                }
+                
+                
+                    
+            });
+
+
+
+        }
+        
         public async Task<List<AMImage>> DescribeImages()
         {
             DescribeImagesRequest request = new DescribeImagesRequest();
@@ -96,6 +148,33 @@ namespace AwsForensicRefresh.AWS
             }
 
             return amiImages;
+        }
+
+        public async Task<List<Vpc>> DescribeVpcs()
+        {
+            DescribeVpcsRequest request = new DescribeVpcsRequest();
+     
+            DescribeVpcsResponse response = await _ec2Client.DescribeVpcsAsync();
+            List<Vpc> vpcs = new List<Vpc>();
+            foreach (var vpc in response.Vpcs)
+            {
+                vpcs.Add(new Vpc(vpc.VpcId, vpc.OwnerId, vpc.CidrBlock));
+            }
+            return vpcs;
+        }
+        
+        
+        public async Task<List<SecurityGroup>> DescribeSecurityGroups()
+        {
+            DescribeSecurityGroupsRequest request = new DescribeSecurityGroupsRequest();
+     
+            DescribeSecurityGroupsResponse response = await _ec2Client.DescribeSecurityGroupsAsync();
+            List<SecurityGroup> securityGroups = new List<SecurityGroup>();
+            foreach (var securityGroup in response.SecurityGroups)
+            {
+                securityGroups.Add(new SecurityGroup(securityGroup.GroupName, securityGroup.GroupId, securityGroup.Description, securityGroup.OwnerId, securityGroup.VpcId));
+            }
+            return securityGroups;
         }
         
         public async Task<List<EC2Instance>> DescribeInstances()

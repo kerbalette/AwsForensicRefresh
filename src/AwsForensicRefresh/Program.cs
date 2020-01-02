@@ -12,6 +12,7 @@ using Amazon.Runtime;
 using AwsForensicRefresh.AWS;
 using AwsForensicRefresh.Utils;
 using System.Reflection;
+using AwsForensicRefresh.AWS.Models;
 
 namespace AwsForensicRefresh
 {
@@ -68,53 +69,125 @@ namespace AwsForensicRefresh
                 AppConfiguration(applicationArguments);
                
                 EC2 ec2 = new EC2(arguments.Object.AccessKey, arguments.Object.SecretKey, arguments.Object.AccountId, arguments.Object.AWSRegion);
-                
+                bool instanceTerminated = false;
+
                 if (UtilsConsole.Confirm("Would you like to terminate an existing Instance?"))
                 {
-                    var results = await ec2.DescribeInstances();
-                    int instanceNumber = 0;
-                    List<string> allowedKeys = new List<string>();
-                    string InstanceList = "";
-                    foreach (var result in results)
-                    {
-                        InstanceList =
-                            $"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})";
-                        
-                        if (applicationArguments.TerminateInstanceID == result.InstanceId)
-                            InstanceList =
-                                $"[{instanceNumber}] * {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})";
+                    instanceTerminated = await CheckTerminateInstance(ec2, applicationArguments);
 
-                        Console.WriteLine($"{InstanceList}");
-                        
-                        allowedKeys.Add(instanceNumber.ToString());
-                        instanceNumber++;
-                    }
-
-                    Console.WriteLine();
-                     
-                    string terminate = Utils.UtilsConsole.ChooseOption("Which instance would you like to terminate? or press [N] for None ", allowedKeys);
-
-                    if (terminate == "N")
-                    {
-                        Console.WriteLine("user pressed N");
-                    }
-
-                    var ec2Terminate = results[Convert.ToInt32(terminate)];
-                    
-                    Console.WriteLine(
-                        $"[{terminate}] * {ec2Terminate.InstanceName}-({ec2Terminate.InstanceState})-({ec2Terminate.Owner})-({ec2Terminate.InstanceId})");
-                    
-                    Console.WriteLine();
-                    if (UtilsConsole.Confirm("Would you like to terminate?"))
-                    {
-                       ec2.TerminateInstance(ec2Terminate);
-                    }
                 }
 
+                await ChooseAMImage(ec2);
+                
+                await ChooseSecurityGroup(ec2);
+                
+                await ChooseVpc(ec2);
+                
+                
                 
             }
             Console.ReadLine();
-            
+        }
+
+        
+        private static async Task ChooseVpc(EC2 ec2)
+        {
+            int vpcNumber = 0;
+            string vpcList = "";
+            List<string> allowedKeys = new List<string>();
+            List<Vpc> vpcs = await ec2.DescribeVpcs();
+            foreach (var vpc in vpcs)
+            {
+                vpcList = $"[{vpcNumber}] {vpc.VpcId} {vpc.CidrBlock}";
+                Console.WriteLine($"{vpcList}");
+                allowedKeys.Add(vpcNumber.ToString());
+                vpcNumber++;
+            }
+
+            string chosenImage = Utils.UtilsConsole.ChooseOption(
+                "Which VPC Subnet would you like to use for your new instance? ", allowedKeys);
+        }
+        
+        private static async Task ChooseSecurityGroup(EC2 ec2)
+        {
+            int securityGroupNumber = 0;
+            string securityGroupList = "";
+            List<string> allowedKeys = new List<string>();
+            List<SecurityGroup> securityGroups = await ec2.DescribeSecurityGroups();
+            foreach (var securityGroup in securityGroups)
+            {
+                securityGroupList = $"[{securityGroupNumber}] {securityGroup.GroupName} {securityGroup.VpcId}";
+                Console.WriteLine($"{securityGroupList}");
+                allowedKeys.Add(securityGroupNumber.ToString());
+                securityGroupNumber++;
+            }
+
+            string chosenImage = Utils.UtilsConsole.ChooseOption(
+                "Which Security Group would you like to use for your new instance? ", allowedKeys);
+        }
+
+        private static async Task ChooseAMImage(EC2 ec2)
+        {
+            int imageNumber = 0;
+            string imageList = "";
+            List<string> allowedKeys = new List<string>();
+            List<AMImage> amImages = await ec2.DescribeImages();
+            foreach (var image in amImages)
+            {
+                imageList = $"[{imageNumber}] {image.Name}-{image.ImageId}";
+                Console.WriteLine($"{imageList}");
+                allowedKeys.Add(imageNumber.ToString());
+                imageNumber++;
+            }
+
+            string chosenImage = Utils.UtilsConsole.ChooseOption(
+                "Which AMI Image number would you like to use for your new instance? ", allowedKeys);
+        }
+
+        private static async Task<bool> CheckTerminateInstance(EC2 ec2, ApplicationArguments applicationArguments)
+        {
+            bool terminateInstance = false;
+            var results = await ec2.DescribeInstances();
+            int instanceNumber = 0;
+            List<string> allowedKeys = new List<string>();
+            string InstanceList = "";
+            foreach (var result in results)
+            {
+                InstanceList =
+                    $"[{instanceNumber}] {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})";
+
+                if (applicationArguments.TerminateInstanceID == result.InstanceId)
+                    InstanceList =
+                        $"[{instanceNumber}] * {result.InstanceName}-({result.InstanceState})-({result.Owner})-({result.InstanceId})";
+
+                Console.WriteLine($"{InstanceList}");
+
+                allowedKeys.Add(instanceNumber.ToString());
+                instanceNumber++;
+            }
+
+            Console.WriteLine();
+
+            string terminate =
+                Utils.UtilsConsole.ChooseOption("Which instance would you like to terminate? or press [N] for None ",
+                    allowedKeys);
+
+            if (terminate == "N")
+            {
+                
+            }
+            else
+            {
+                var ec2Terminate = results[Convert.ToInt32(terminate)];
+
+                Console.WriteLine();
+                if (UtilsConsole.Confirm($"Do you really want to terminate {ec2Terminate.InstanceName}?"))
+                {
+                    // ec2.TerminateInstance(ec2Terminate);
+                    terminateInstance = true;
+                }
+            }
+            return terminateInstance;
         }
 
         static string PromptForInput(string message)

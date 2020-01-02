@@ -15,7 +15,7 @@ namespace AwsForensicRefresh.AWS.Models
         {
             InstanceId = instanceId;
             InstanceName = instanceName;
-            PublicIPAddress = publicIpAddress;
+            PublicIpAddress = publicIpAddress;
             PublicDnsName = publicDnsName;
             InstanceState = instanceState;
             InstanceType = instanceType;
@@ -27,7 +27,7 @@ namespace AwsForensicRefresh.AWS.Models
 
         public string InstanceId { get; set; }
         public string InstanceName { get; set; }
-        public string PublicIPAddress { get; set; }
+        public string PublicIpAddress { get; set; }
         public string PublicDnsName { get; set; }
         public string InstanceState { get; set; }
         public string InstanceType { get; set; }
