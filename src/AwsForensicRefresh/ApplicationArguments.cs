@@ -15,5 +15,11 @@ namespace AwsForensicRefresh
         public string AWSRegion { get; set; }
         public string TerminateInstanceID { get; set; }
         public string TerminateInstanceName { get; set; }
+        public string KeyName { get; set; }
+        public string WindowsInstanceType { get; set; }
+        public string WindowsEbsVolumeSize { get; set; }
+        public string SiftInstanceType { get; set; }
+        public string SiftEbsVolumeSize { get; set; }
+        
     }
 }

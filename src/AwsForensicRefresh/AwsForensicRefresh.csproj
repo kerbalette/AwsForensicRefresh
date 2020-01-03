@@ -57,7 +57,9 @@
     <Compile Include="AWS\EC2.cs" />
     <Compile Include="Models\AMImage.cs" />
     <Compile Include="Models\EC2Instance.cs" />
+    <Compile Include="Models\ReturnAMImage.cs" />
     <Compile Include="Models\SecurityGroup.cs" />
+    <Compile Include="Models\Subnet.cs" />
     <Compile Include="Models\Vpc.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

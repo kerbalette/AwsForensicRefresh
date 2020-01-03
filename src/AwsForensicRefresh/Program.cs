@@ -51,6 +51,30 @@ namespace AwsForensicRefresh
             arguments.Setup(arg => arg.TerminateInstanceName)
                 .As('n', "instancename")
                 .WithDescription("Existing Instance Name to terminate");
+            
+            arguments.Setup(arg => arg.KeyName)
+                .As('p', "keyname")
+                .WithDescription("PEM Key pair to use for the new instance");
+            
+            arguments.Setup(arg => arg.WindowsInstanceType)
+                .As('g', "windowsinstancetype")
+                .SetDefault("t2.medium")
+                .WithDescription("CPU Capacity, Memory and storage type for the Windows Forensic Instance");
+            
+            arguments.Setup(arg => arg.WindowsEbsVolumeSize)
+                .As('h', "windowsebsvolumesize")
+                .SetDefault("30")
+                .WithDescription("Size in Gb of the disk volume associated with the Windows Forensic Instance");
+            
+            arguments.Setup(arg => arg.SiftInstanceType)
+                .As('j', "siftinstancetype")
+                .SetDefault("t2.micro")
+                .WithDescription("CPU Capacity, Memory and storage type for the SIFT Forensic Instance");
+            
+            arguments.Setup(arg => arg.SiftEbsVolumeSize)
+                .As('l', "siftebsvolumesize")
+                .SetDefault("8")
+                .WithDescription("Size in Gb of the disk volume associated with the SIFT Forensic Instance");
 
             arguments.SetupHelp("?", "help")
                 .Callback(text => Console.WriteLine(text));
@@ -77,20 +101,32 @@ namespace AwsForensicRefresh
 
                 }
 
-                await ChooseAMImage(ec2);
+                ReturnAMImage returnAmImage = await ChooseAmImage(ec2, applicationArguments);
+                string securityGroupId=  await ChooseSecurityGroup(ec2);
+                string vpcId = await ChooseVpc(ec2);
+                string owner = UtilsConsole.AskQuestion("Who is the owner of this Instance", Environment.UserName);
+                string usageDescription = UtilsConsole.AskQuestion("What will be the usage for this Instance");
+                string instanceName = Utils.UtilsConsole.AskQuestion("What name will this instance have",
+                    EstimateInstanceName(owner, returnAmImage.Platform));
                 
-                await ChooseSecurityGroup(ec2);
+                // TODO Public IP, owner, usage and name Tags
                 
-                await ChooseVpc(ec2);
-                
-                
-                
+                ec2.RunInstance(returnAmImage.ImageId, vpcId, securityGroupId, owner, usageDescription, returnAmImage.InstanceType, Convert.ToInt32(returnAmImage.EbsVolumeSize), applicationArguments.KeyName);
+
+
             }
             Console.ReadLine();
         }
 
+        private static string EstimateInstanceName(string username, string platform)
+        {
+            if (platform.ToLower() == "windows")
+                return $"{username}-win2k19-x64-forensic";
+            else
+                return $"{username}-SIFT-x64-forensic";
+        }
         
-        private static async Task ChooseVpc(EC2 ec2)
+        private static async Task<string> ChooseVpc(EC2 ec2)
         {
             int vpcNumber = 0;
             string vpcList = "";
@@ -104,11 +140,14 @@ namespace AwsForensicRefresh
                 vpcNumber++;
             }
 
-            string chosenImage = Utils.UtilsConsole.ChooseOption(
+            string chosenVpc = Utils.UtilsConsole.ChooseOption(
                 "Which VPC Subnet would you like to use for your new instance? ", allowedKeys);
+            
+            
+            return vpcs[Convert.ToInt32(chosenVpc)].VpcId;
         }
         
-        private static async Task ChooseSecurityGroup(EC2 ec2)
+        private static async Task<string> ChooseSecurityGroup(EC2 ec2)
         {
             int securityGroupNumber = 0;
             string securityGroupList = "";
@@ -122,11 +161,13 @@ namespace AwsForensicRefresh
                 securityGroupNumber++;
             }
 
-            string chosenImage = Utils.UtilsConsole.ChooseOption(
+            string chosenSecurityGroup = Utils.UtilsConsole.ChooseOption(
                 "Which Security Group would you like to use for your new instance? ", allowedKeys);
+
+            return securityGroups[Convert.ToInt32(chosenSecurityGroup)].GroupId;
         }
 
-        private static async Task ChooseAMImage(EC2 ec2)
+        private static async Task<ReturnAMImage> ChooseAmImage(EC2 ec2, ApplicationArguments applicationArguments)
         {
             int imageNumber = 0;
             string imageList = "";
@@ -134,14 +175,37 @@ namespace AwsForensicRefresh
             List<AMImage> amImages = await ec2.DescribeImages();
             foreach (var image in amImages)
             {
-                imageList = $"[{imageNumber}] {image.Name}-{image.ImageId}";
+                string platform = "";
+                if (image.Platform == "Windows")
+                    platform = "windows";
+                else
+                    platform = "linux";
+                
+                imageList = $"[{imageNumber}] {image.Name}-{image.ImageId}-{platform}";
                 Console.WriteLine($"{imageList}");
                 allowedKeys.Add(imageNumber.ToString());
                 imageNumber++;
             }
-
             string chosenImage = Utils.UtilsConsole.ChooseOption(
                 "Which AMI Image number would you like to use for your new instance? ", allowedKeys);
+
+            var imageToUse = amImages[Convert.ToInt32(chosenImage)];
+            ReturnAMImage returnAmImage;
+            if (imageToUse.Platform == "Windows")
+            {
+                returnAmImage.InstanceType = applicationArguments.WindowsInstanceType;
+                returnAmImage.EbsVolumeSize = applicationArguments.WindowsEbsVolumeSize;
+                returnAmImage.Platform = "windows";
+            }
+            else
+            {
+                returnAmImage.InstanceType = applicationArguments.SiftInstanceType;
+                returnAmImage.EbsVolumeSize = applicationArguments.SiftEbsVolumeSize;
+                returnAmImage.Platform = "linux";
+            }
+
+            returnAmImage.ImageId = imageToUse.ImageId;
+            return returnAmImage;
         }
 
         private static async Task<bool> CheckTerminateInstance(EC2 ec2, ApplicationArguments applicationArguments)
@@ -183,7 +247,7 @@ namespace AwsForensicRefresh
                 Console.WriteLine();
                 if (UtilsConsole.Confirm($"Do you really want to terminate {ec2Terminate.InstanceName}?"))
                 {
-                    // ec2.TerminateInstance(ec2Terminate);
+                    ec2.TerminateInstance(ec2Terminate);
                     terminateInstance = true;
                 }
             }

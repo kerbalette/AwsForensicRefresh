@@ -11,6 +11,7 @@ using Amazon.EC2.Model;
 using Amazon.Runtime;
 using AwsForensicRefresh.AWS.Models;
 using SecurityGroup = AwsForensicRefresh.AWS.Models.SecurityGroup;
+using Subnet = AwsForensicRefresh.AWS.Models.Subnet;
 using Vpc = AwsForensicRefresh.AWS.Models.Vpc;
 
 namespace AwsForensicRefresh.AWS
@@ -63,9 +64,13 @@ namespace AwsForensicRefresh.AWS
 
         private string GetAllocationAddress(string address)
         {
+            if (address == null)
+                return "";
+            
             var response = _ec2Client.DescribeAddresses(new DescribeAddressesRequest());
             List<Address> addresses = response.Addresses;
-            return addresses.First(s => s.PublicIp == address).AllocationId;
+            string retAddress = addresses.FirstOrDefault(s => s.PublicIp == address).AllocationId;
+            return retAddress;
         }
 
         private string GetAssociationAddress(string address)
@@ -77,22 +82,28 @@ namespace AwsForensicRefresh.AWS
 
         public void TerminateInstance(EC2Instance ec2Instance)
         {
-            string allocationId = GetAllocationAddress(ec2Instance.PublicIpAddress);
-            string associationId = GetAssociationAddress(ec2Instance.PublicIpAddress);
-            if (DisassociateAddress(associationId))
-                ReleaseAddress(allocationId);
-            
+            if (ec2Instance.PublicIpAddress != null)
+            {
+                string allocationId = GetAllocationAddress(ec2Instance.PublicIpAddress);
+                string associationId = GetAssociationAddress(ec2Instance.PublicIpAddress);
+                if (DisassociateAddress(associationId))
+                    ReleaseAddress(allocationId);
+            }
+
             DestroyInstance(ec2Instance);
         }
 
-        public void RunInstance(string imageId, string subnetId, string securityGroupId, string owner, string usageDescription, string platform)
+        public void RunInstance(string imageId, string vpcId, string securityGroupId, string owner, string usageDescription, string instanceType, int volumeSize, string keyName)
         {
+            string subnetId = DescribeSubnets(vpcId).Result.SubnetId;
+            
+            
             List<BlockDeviceMapping> blockDeviceMappings = new List<BlockDeviceMapping>
             {
                 new BlockDeviceMapping
                 {
                     DeviceName = "/dev/sda1",
-                    Ebs = new EbsBlockDevice {VolumeSize = 30}
+                    Ebs = new EbsBlockDevice {VolumeSize = volumeSize}
                 }
             };
 
@@ -100,13 +111,13 @@ namespace AwsForensicRefresh.AWS
             {
                 BlockDeviceMappings = blockDeviceMappings,
                 ImageId = imageId,
-                InstanceType = "t2.micro",
-                KeyName = "aws-alockhart-current.pem",
+                InstanceType = instanceType,
+                KeyName = keyName,
                 MinCount = 1,
                 MaxCount = 1,
                 SecurityGroupIds = new List<string>{securityGroupId},
                 SubnetId = subnetId,
-                TagSpecifications = new List<TagSpecification> {
+                /*TagSpecifications = new List<TagSpecification> {
                     new TagSpecification {
                         ResourceType = "instance",
                         Tags = new List<Tag> {
@@ -125,7 +136,7 @@ namespace AwsForensicRefresh.AWS
                             }
                         }
                     }
-                }
+                }*/
                 
                 
                     
@@ -133,6 +144,33 @@ namespace AwsForensicRefresh.AWS
 
 
 
+        }
+        
+        public async Task<Subnet> DescribeSubnets(string vpcId)
+        {
+            List<Filter> filters = new List<Filter>
+            {
+                new Filter
+                {
+                    Name = "vpc-id",
+                    Values = new List<string>
+                    {
+                        vpcId
+                    }
+                }
+            };
+
+            DescribeSubnetsRequest request = new DescribeSubnetsRequest {Filters = filters};
+
+            DescribeSubnetsResponse response = await _ec2Client.DescribeSubnetsAsync(request);
+            
+            List<Subnet> subnets = new List<Subnet>();
+            foreach (var item in response.Subnets)
+            {
+                subnets.Add(new Subnet(item.SubnetId, item.VpcId, item.AvailabilityZoneId, item.AvailabilityZone, item.CidrBlock));
+            }
+
+            return subnets.FirstOrDefault();
         }
         
         public async Task<List<AMImage>> DescribeImages()
