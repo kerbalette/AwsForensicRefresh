@@ -117,7 +117,7 @@ namespace AwsForensicRefresh.AWS
                 MaxCount = 1,
                 SecurityGroupIds = new List<string>{securityGroupId},
                 SubnetId = subnetId,
-                /*TagSpecifications = new List<TagSpecification> {
+                TagSpecifications = new List<TagSpecification> {
                     new TagSpecification {
                         ResourceType = "instance",
                         Tags = new List<Tag> {
@@ -126,24 +126,9 @@ namespace AwsForensicRefresh.AWS
                                 Value = owner
                             }
                         }
-                    },
-                    new TagSpecification {
-                        ResourceType = "instance",
-                        Tags = new List<Tag> {
-                            new Tag {
-                                Key = "usage-description",
-                                Value = usageDescription
-                            }
-                        }
                     }
-                }*/
-                
-                
-                    
+                }
             });
-
-
-
         }
         
         public async Task<Subnet> DescribeSubnets(string vpcId)
