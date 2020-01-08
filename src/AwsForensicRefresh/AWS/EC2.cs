@@ -93,7 +93,7 @@ namespace AwsForensicRefresh.AWS
             DestroyInstance(ec2Instance);
         }
 
-        public void RunInstance(string imageId, string vpcId, string securityGroupId, string owner, string usageDescription, string instanceType, int volumeSize, string keyName)
+        public void RunInstance(string imageId, string vpcId, string securityGroupId, string owner, string usageDescription, string instanceType, int volumeSize, string keyName, string instanceName)
         {
             string subnetId = DescribeSubnets(vpcId).Result.SubnetId;
             
@@ -124,6 +124,17 @@ namespace AwsForensicRefresh.AWS
                             new Tag {
                                 Key = "owner",
                                 Value = owner
+                            },
+                            new Tag
+                            {
+                                Key = "usage-description",
+                                Value = usageDescription
+                            },
+                            new Tag
+                            {
+                                Key = "Name",
+                                Value = instanceName
+
                             }
                         }
                     }

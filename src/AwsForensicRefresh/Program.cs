@@ -111,7 +111,7 @@ namespace AwsForensicRefresh
                 
                 // TODO Public IP, owner, usage and name Tags
                 
-                ec2.RunInstance(returnAmImage.ImageId, vpcId, securityGroupId, owner, usageDescription, returnAmImage.InstanceType, Convert.ToInt32(returnAmImage.EbsVolumeSize), applicationArguments.KeyName);
+                ec2.RunInstance(returnAmImage.ImageId, vpcId, securityGroupId, owner, usageDescription, returnAmImage.InstanceType, Convert.ToInt32(returnAmImage.EbsVolumeSize), applicationArguments.KeyName, instanceName);
 
 
             }
