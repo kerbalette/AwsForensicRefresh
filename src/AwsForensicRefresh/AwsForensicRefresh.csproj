@@ -55,6 +55,8 @@
   <ItemGroup>
     <Compile Include="ApplicationArguments.cs" />
     <Compile Include="AWS\EC2.cs" />
+    <Compile Include="Models\Address.cs" />
+    <Compile Include="Models\Addresses.cs" />
     <Compile Include="Models\AMImage.cs" />
     <Compile Include="Models\EC2Instance.cs" />
     <Compile Include="Models\ReturnAMImage.cs" />

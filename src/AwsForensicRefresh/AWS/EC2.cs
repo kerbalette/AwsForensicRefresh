@@ -9,10 +9,11 @@ using Amazon;
 using Amazon.EC2;
 using Amazon.EC2.Model;
 using Amazon.Runtime;
-using AwsForensicRefresh.AWS.Models;
-using SecurityGroup = AwsForensicRefresh.AWS.Models.SecurityGroup;
-using Subnet = AwsForensicRefresh.AWS.Models.Subnet;
-using Vpc = AwsForensicRefresh.AWS.Models.Vpc;
+using AwsForensicRefresh.Models;
+using Address = AwsForensicRefresh.Models.Address;
+using SecurityGroup = AwsForensicRefresh.Models.SecurityGroup;
+using Subnet = AwsForensicRefresh.Models.Subnet;
+using Vpc = AwsForensicRefresh.Models.Vpc;
 
 namespace AwsForensicRefresh.AWS
 {
@@ -68,7 +69,7 @@ namespace AwsForensicRefresh.AWS
                 return "";
             
             var response = _ec2Client.DescribeAddresses(new DescribeAddressesRequest());
-            List<Address> addresses = response.Addresses;
+            List<Amazon.EC2.Model.Address> addresses = response.Addresses;
             string retAddress = addresses.FirstOrDefault(s => s.PublicIp == address).AllocationId;
             return retAddress;
         }
@@ -76,7 +77,7 @@ namespace AwsForensicRefresh.AWS
         private string GetAssociationAddress(string address)
         {
             var response = _ec2Client.DescribeAddresses(new DescribeAddressesRequest());
-            List<Address> addresses = response.Addresses;
+            List<Amazon.EC2.Model.Address> addresses = response.Addresses;
             return addresses.First(s => s.PublicIp == address).AssociationId;
         }
 
@@ -167,6 +168,19 @@ namespace AwsForensicRefresh.AWS
             }
 
             return subnets.FirstOrDefault();
+        }
+
+        public async Task<List<Address>> DescribeAddresses()
+        {
+            DescribeAddressesRequest request = new DescribeAddressesRequest();
+            DescribeAddressesResponse response = await _ec2Client.DescribeAddressesAsync(request);
+            List<AwsForensicRefresh.Models.Address> addresses = new List<Address>();
+            foreach (var item in response.Addresses)
+            {
+                addresses.Add(new Address(item.AllocationId, item.AssociationId, item.InstanceId, item.NetworkInterfaceId, item.PrivateIpAddress, item.PublicIp));
+            }
+
+            return addresses;
         }
         
         public async Task<List<AMImage>> DescribeImages()

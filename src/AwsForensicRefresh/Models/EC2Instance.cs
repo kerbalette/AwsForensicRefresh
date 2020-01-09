@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Amazon.EC2.Model;
 
-namespace AwsForensicRefresh.AWS.Models
+namespace AwsForensicRefresh.Models
 {
     public class EC2Instance
     {

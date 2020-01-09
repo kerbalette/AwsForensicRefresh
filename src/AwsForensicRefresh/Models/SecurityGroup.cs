@@ -1,6 +1,6 @@
 ﻿using Amazon.EC2.Model;
 
-namespace AwsForensicRefresh.AWS.Models
+namespace AwsForensicRefresh.Models
 {
     public class SecurityGroup
     {

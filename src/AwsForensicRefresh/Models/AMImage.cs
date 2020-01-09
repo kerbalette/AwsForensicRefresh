@@ -1,4 +1,4 @@
-﻿namespace AwsForensicRefresh.AWS.Models
+﻿namespace AwsForensicRefresh.Models
 {
     public class AMImage
     {

@@ -12,7 +12,7 @@ using Amazon.Runtime;
 using AwsForensicRefresh.AWS;
 using AwsForensicRefresh.Utils;
 using System.Reflection;
-using AwsForensicRefresh.AWS.Models;
+using AwsForensicRefresh.Models;
 
 namespace AwsForensicRefresh
 {
@@ -108,9 +108,18 @@ namespace AwsForensicRefresh
                 string usageDescription = UtilsConsole.AskQuestion("What will be the usage for this Instance");
                 string instanceName = Utils.UtilsConsole.AskQuestion("What name will this instance have",
                     EstimateInstanceName(owner, returnAmImage.Platform));
-                
+
                 // TODO Public IP, owner, usage and name Tags
-                
+
+                // check how many Elastic IP addresses are available. If there are 5 or more then check if an instance was terminated
+                // If an instance was terminated then ask if your want to use that one
+                // Otherwise check which instances are stopped then suggest one which is of the same platform as the instance type you would like to take the
+                // elastic IP from
+
+                //List<AwsForensicRefresh.Models.Address> addresses = new Addresses();
+                Addresses addresses = new Addresses(ec2);
+                int a = addresses.Count;
+
                 ec2.RunInstance(returnAmImage.ImageId, vpcId, securityGroupId, owner, usageDescription, returnAmImage.InstanceType, Convert.ToInt32(returnAmImage.EbsVolumeSize), applicationArguments.KeyName, instanceName);
 
 
@@ -236,11 +245,7 @@ namespace AwsForensicRefresh
                 Utils.UtilsConsole.ChooseOption("Which instance would you like to terminate? or press [N] for None ",
                     allowedKeys);
 
-            if (terminate == "N")
-            {
-                
-            }
-            else
+            if (terminate != "N")
             {
                 var ec2Terminate = results[Convert.ToInt32(terminate)];
 
